@@ -12,8 +12,8 @@ import (
 
 // 以 DeepSeek 为例 (兼容 OpenAI 格式)
 const (
-	// 稍后您需要把这里换成您选用的模型 API 地址
-	aiApiUrl = "https://api.deepseek.com/v1/chat/completions"
+	// Gemini 的 OpenAI 兼容接口地址
+	aiApiUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 )
 
 type AIRequest struct {
@@ -50,7 +50,7 @@ func OptimizeResume(targetJob string, experience string) (string, error) {
 	userPrompt := fmt.Sprintf("我的目标岗位是：%s\n我的原始工作经历是：%s", targetJob, experience)
 
 	reqBody := AIRequest{
-		Model: "deepseek-chat", // 替换为您使用的具体模型名
+		Model: "gemini-1.5-flash", // 使用 Gemini 1.5 Flash 模型
 		Messages: []Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
