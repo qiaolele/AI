@@ -1,32 +1,39 @@
-# 二开推荐阅读[如何提高项目构建效率](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/scene/build/speed.html)
-# 选择构建用基础镜像（选择原则：在包含所有用到的依赖前提下尽可能体积小）。如需更换，请到[dockerhub官方仓库](https://hub.docker.com/_/golang?tab=tags)自行选择后替换。
-FROM golang:1.17.1-alpine3.14 as builder
+# 阶段一：构建阶段
+FROM golang:1.21-alpine AS builder
 
-# 指定构建过程中的工作目录
+# 开启 CGO 禁用，构建完全静态的可执行文件（减小体积、提升启动速度）
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+# 如果国内拉取慢，可以设置代理
+ENV GOPROXY=https://goproxy.cn,direct
+
 WORKDIR /app
 
-# 将当前目录（dockerfile所在目录）下所有文件都拷贝到工作目录下（.dockerignore中文件除外）
-COPY . /app/
+# 优先缓存依赖模块
+COPY go.mod ./
+# 如果有 go.sum 也需要 COPY go.sum ./
+RUN go mod download
 
-# 执行代码编译命令。操作系统参数为linux，编译后的二进制产物命名为main，并存放在当前目录下。
-RUN GOOS=linux go build -o main .
+# 复制剩余代码
+COPY . .
 
-# 选用运行时所用基础镜像（GO语言选择原则：尽量体积小、包含基础linux内容的基础镜像）
-FROM alpine:3.13
+# 编译应用，去掉调试信息减小体积
+RUN go build -ldflags="-s -w" -o main .
 
-# 容器默认时区为UTC，如需使用上海时间请启用以下时区设置命令
-# RUN apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
+# 阶段二：运行阶段（使用极致精简的 alpine）
+FROM alpine:latest
 
-# 使用 HTTPS 协议访问容器云调用证书安装
-RUN apk add ca-certificates
+# 安装证书以支持 HTTPS 请求
+RUN apk --no-cache add ca-certificates tzdata
 
-# 指定运行时的工作目录
 WORKDIR /app
 
-# 将构建产物/app/main拷贝到运行时的工作目录中
-COPY --from=builder /app/main /app/index.html /app/
+# 从 builder 阶段把编译好的二进制文件拿过来
+COPY --from=builder /app/main .
 
-# 执行启动命令
-# 写多行独立的CMD命令是错误写法！只有最后一行CMD命令会被执行，之前的都会被忽略，导致业务报错。
-# 请参考[Docker官方文档之CMD命令](https://docs.docker.com/engine/reference/builder/#cmd)
-CMD ["/app/main"]
+# 暴露 80 端口（微信云托管规定）
+EXPOSE 80
+
+# 运行应用
+CMD ["./main"]
