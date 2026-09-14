@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-// 微信云托管服务器在国内，无法直接访问 Google 的 API (被墙)。
-// 这里我们必须换成国内的大模型，比如 DeepSeek，它的接口和 OpenAI 是完全兼容的。
+// 默认配置（如果环境变量未设置，则使用此默认值）
 const (
-	aiApiUrl = "https://api.deepseek.com/v1/chat/completions"
+	defaultApiUrl = "https://api.deepseek.com/v1/chat/completions"
+	defaultModel  = "deepseek-chat"
 )
 
 type AIRequest struct {
@@ -47,10 +47,20 @@ func OptimizeResume(targetJob string, experience string) (string, error) {
 3. 重点突出对业务的价值和可量化的数据。
 4. 返回的内容直接是润色后的经历，不需要寒暄，分点列出即可。`
 
+	// 获取用户自定义的 API 地址和模型名称（支持各种兼容 OpenAI 的 API）
+	apiUrl := os.Getenv("AI_API_URL")
+	if apiUrl == "" {
+		apiUrl = defaultApiUrl
+	}
+	modelName := os.Getenv("AI_MODEL")
+	if modelName == "" {
+		modelName = defaultModel
+	}
+
 	userPrompt := fmt.Sprintf("我的目标岗位是：%s\n我的原始工作经历是：%s", targetJob, experience)
 
 	reqBody := AIRequest{
-		Model: "deepseek-chat", // 使用 DeepSeek 模型
+		Model: modelName,
 		Messages: []Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
@@ -62,7 +72,7 @@ func OptimizeResume(targetJob string, experience string) (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", aiApiUrl, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", err
 	}
