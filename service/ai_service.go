@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-// 以 DeepSeek 为例 (兼容 OpenAI 格式)
+// 微信云托管服务器在国内，无法直接访问 Google 的 API (被墙)。
+// 这里我们必须换成国内的大模型，比如 DeepSeek，它的接口和 OpenAI 是完全兼容的。
 const (
-	// Gemini 的 OpenAI 兼容接口地址
-	aiApiUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+	aiApiUrl = "https://api.deepseek.com/v1/chat/completions"
 )
 
 type AIRequest struct {
@@ -50,7 +50,7 @@ func OptimizeResume(targetJob string, experience string) (string, error) {
 	userPrompt := fmt.Sprintf("我的目标岗位是：%s\n我的原始工作经历是：%s", targetJob, experience)
 
 	reqBody := AIRequest{
-		Model: "gemini-1.5-flash", // 使用 Gemini 1.5 Flash 模型
+		Model: "deepseek-chat", // 使用 DeepSeek 模型
 		Messages: []Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
