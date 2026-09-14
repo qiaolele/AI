@@ -35,8 +35,10 @@ type AIResponse struct {
 func OptimizeResume(targetJob string, experience string) (string, error) {
 	// 推荐将 API_KEY 配置在云托管的环境变量中，而非硬编码
 	apiKey := os.Getenv("AI_API_KEY")
-	if apiKey == "" {
-		return "", fmt.Errorf("AI_API_KEY environment variable is not set")
+	
+	// 如果没有配置密钥，或者配置为 mock，则直接返回一段模拟的优化结果，方便测试流程
+	if apiKey == "" || apiKey == "mock" {
+		return "【系统提示：当前使用的是模拟数据，因为您没有配置真实的 AI 密钥】\n\n1. 熟练掌握相关专业技能，具备从0到1搭建复杂系统的经验。\n2. 深入理解工程化架构，曾主导团队核心业务系统重构，提升运行效率达40%。\n3. 具有良好的业务抽象设计思维，能有效提升跨团队协同开发效率。\n\n*(如需真实 AI 生成，请前往云托管环境变量配置真实的 AI_API_KEY)*", nil
 	}
 
 	// 构建系统提示词
