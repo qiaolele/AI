@@ -41,7 +41,15 @@ func handleOptimize(c *gin.Context) {
 		return
 	}
 
-	// 调用 AI 服务进行润色
+	// 1. 先进行文本安全审核（微信强行要求）
+	contentToCheck := req.TargetJob + " " + req.Experience
+	if err := service.CheckContentSecurity(contentToCheck); err != nil {
+		log.Printf("Content Security Check Failed: %v", err)
+		c.JSON(http.StatusOK, gin.H{"code": 403, "message": err.Error()}) // 返回特定状态码或200带错误message
+		return
+	}
+
+	// 2. 调用 AI 服务进行润色
 	optimizedExp, err := service.OptimizeResume(req.TargetJob, req.Experience)
 	if err != nil {
 		log.Printf("AI Optimize Error: %v", err)
